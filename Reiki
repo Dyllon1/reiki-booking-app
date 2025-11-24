@@ -1,0 +1,234 @@
+reiki-booking-app/
+├── app/
+│   ├── globals.css
+│   ├── layout.tsx import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "Reiki Healing with [Your Friend's Name]",
+  description: "Book your in-person or distance Reiki session",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className={`${inter.className} bg-gradient-to-br from-purple-50 to-pink-50 min-h-screen`}>
+        {children}
+      </body>
+    </html>
+  );
+}
+│   ├── page.tsx import BookingForm from "@/components/BookingForm";
+
+export default function Home() {
+  return (
+    <main className="container mx-auto px-4 py-16 max-w-4xl">
+      <div className="text-center mb-12">
+        <h1 className="text-5xl font-bold text-purple-900 mb-4">
+          Reiki Healing Sessions
+        </h1>
+        <p className="text-xl text-purple-700">
+          Restore balance, release stress, and awaken your natural healing energy
+        </p>
+      </div>
+      <BookingForm />
+    </main>
+  );
+}
+│   └── api/
+│       ├── bookings/
+│       │   └── route.ts
+│       └── stripe/
+│           └── webhook.ts
+├── components/
+│   ├── ui/
+│   │   ├── button.tsx
+│   │   ├── calendar.tsx
+│   │   └── input.tsx
+│   ├── BookingForm.tsx 'use client';
+
+import { useState } from 'react';
+import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase';
+
+export default function BookingForm() {
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [service, setService] = useState('60min-inperson');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const services = [
+    { value: '30min-distance', label: '30 min Distance Reiki', price: '$65' },
+    { value: '60min-inperson', label: '60 min In-Person Reiki', price: '$120' },
+    { value: '90min-inperson', label: '90 min In-Person Reiki', price: '$170' },
+    { value: 'package-5', label: '5-Session Package', price: '$550' },
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!date) return alert("Please pick a date");
+
+    setLoading(true);
+    const { error } = await supabase
+      .from('bookings')
+      .insert({
+        name,
+        email,
+        phone,
+        service,
+        date: date.toISOString(),
+        status: 'pending'
+      });
+
+    if (error) {
+      setMessage('Something went wrong. Try again.');
+    } else {
+      setMessage('Booking request sent! She\'ll confirm within 24h');
+      setName(''); setEmail(''); setPhone(''); setDate(new Date());
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="bg-white/80 backdrop-blur rounded-2xl shadow-2xl p-8 md:p-12">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block text-lg font-medium mb-2">Service</label>
+          <select
+            value={service}
+            onChange={(e) => setService(e.target.value)}
+            className="w-full p-4 border border-purple-200 rounded-lg focus:ring-4 focus:ring-purple-300"
+            required
+          >
+            {services.map(s => (
+              <option key={s.value} value={s.value}>
+                {s.label} — {s.price}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="p-4 border border-purple-200 rounded-lg"
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="p-4 border border-purple-200 rounded-lg"
+            required
+          />
+        </div>
+
+        <input
+          type="tel"
+          placeholder="Phone (for reminders)"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="w-full p-4 border border-purple-200 rounded-lg"
+        />
+
+        <div>
+          <label className="block text-lg font-medium mb-3">Choose your date & time</label>
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            disabled={(date) => date < new Date() || date.getDay() === 0 || date.getDay() === 2} // example: no Sundays/Tuesdays
+            className="rounded-lg border shadow"
+          />
+        </div>
+
+        {date && (
+          <p className="text-center text-lg font-semibold text-purple-800">
+            Selected: {format(date, 'PPPp')}
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 text-xl rounded-xl"
+        >
+          {loading ? 'Sending…' : 'Book My Session'}
+        </Button>
+
+        {message && (
+          <p className={`text-center text-lg font-medium ${message.includes('sent') ? 'text-green-600' : 'text-red-600'}`}>
+            {message}
+          </p>
+        )}
+      </form>
+    </div>
+  );
+}
+│   └── ClientPortal.tsx
+├── lib/
+│   ├── supabase.ts
+│   ├── stripe.ts
+│   └── utils.ts
+├── public/
+│   └── logo.png  (add your friend's logo here)
+├── supabase/
+│   └── migrations/
+│       └── 001_initial_schema.sql
+├── tailwind.config.js
+├── next.config.mjs
+├── package.json{
+  "name": "reiki-booking-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.0.2",
+    "@supabase/supabase-js": "^2.45.0",
+    "@tanstack/react-query": "^5.59.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "lucide-react": "^0.441.0",
+    "next": "15.0.1",
+    "react": "^18",
+    "react-day-picker": "^8.10.1",
+    "react-dom": "^18",
+    "resend": "^3.5.0",
+    "stripe": "^16.12.0",
+    "tailwind-merge": "^2.5.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5"
+  }
+}
+└── tsconfig.json
