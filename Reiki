@@ -55,130 +55,83 @@ export default function Home() {
 │   ├── BookingForm.tsx 'use client';
 
 import { useState } from 'react';
-import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase';
 
 export default function BookingForm() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [service, setService] = useState('60min-inperson');
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   const services = [
     { value: '30min-distance', label: '30 min Distance Reiki', price: '$65' },
     { value: '60min-inperson', label: '60 min In-Person Reiki', price: '$120' },
     { value: '90min-inperson', label: '90 min In-Person Reiki', price: '$170' },
-    { value: 'package-5', label: '5-Session Package', price: '$550' },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!date) return alert("Please pick a date");
-
-    setLoading(true);
-    const { error } = await supabase
-      .from('bookings')
-      .insert({
-        name,
-        email,
-        phone,
-        service,
-        date: date.toISOString(),
-        status: 'pending'
-      });
-
-    if (error) {
-      setMessage('Something went wrong. Try again.');
-    } else {
-      setMessage('Booking request sent! She\'ll confirm within 24h');
-      setName(''); setEmail(''); setPhone(''); setDate(new Date());
-    }
-    setLoading(false);
+    setMessage('Booking submitted! (Demo mode — add Supabase next)');
+    // TODO: Add real Supabase insert here
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur rounded-2xl shadow-2xl p-8 md:p-12">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-lg font-medium mb-2">Service</label>
-          <select
-            value={service}
-            onChange={(e) => setService(e.target.value)}
-            className="w-full p-4 border border-purple-200 rounded-lg focus:ring-4 focus:ring-purple-300"
-            required
-          >
-            {services.map(s => (
-              <option key={s.value} value={s.value}>
-                {s.label} — {s.price}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="p-4 border border-purple-200 rounded-lg"
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="p-4 border border-purple-200 rounded-lg"
-            required
-          />
-        </div>
-
-        <input
-          type="tel"
-          placeholder="Phone (for reminders)"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="w-full p-4 border border-purple-200 rounded-lg"
-        />
-
-        <div>
-          <label className="block text-lg font-medium mb-3">Choose your date & time</label>
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            disabled={(date) => date < new Date() || date.getDay() === 0 || date.getDay() === 2} // example: no Sundays/Tuesdays
-            className="rounded-lg border shadow"
-          />
-        </div>
-
-        {date && (
-          <p className="text-center text-lg font-semibold text-purple-800">
-            Selected: {format(date, 'PPPp')}
-          </p>
-        )}
-
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-6 text-xl rounded-xl"
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-2">Service</label>
+        <select
+          value={service}
+          onChange={(e) => setService(e.target.value)}
+          className="w-full p-3 border rounded-lg"
+          required
         >
-          {loading ? 'Sending…' : 'Book My Session'}
-        </Button>
+          {services.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label} — {s.price}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        {message && (
-          <p className={`text-center text-lg font-medium ${message.includes('sent') ? 'text-green-600' : 'text-red-600'}`}>
-            {message}
-          </p>
-        )}
-      </form>
-    </div>
+      <input
+        type="text"
+        placeholder="Full Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="w-full p-3 border rounded-lg"
+        required
+      />
+
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="w-full p-3 border rounded-lg"
+        required
+      />
+
+      <div>
+        <label className="block text-sm font-medium mb-2">Date</label>
+        <input
+          type="date"
+          value={date ? date.toISOString().split('T')[0] : ''}
+          onChange={(e) => setDate(new Date(e.target.value))}
+          className="w-full p-3 border rounded-lg"
+          min={new Date().toISOString().split('T')[0]}
+          required
+        />
+      </div>
+
+      <button
+        type="submit"
+        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-bold"
+      >
+        Book Session
+      </button>
+
+      {message && <p className="text-green-600 text-center">{message}</p>}
+    </form>
   );
 }
 │   └── ClientPortal.tsx
